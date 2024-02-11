@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script type="module">
+import { executeMulti as executeWASM } from "./build/release.js";
+import { execute as executeJS } from './src/brainfuck.js'
+
+const TOKENS = ['>', '<', '+', '-', '.', ',', '[', ']'];
+const compile = (/** @type string */ input) => {
+  const bytes = []
+
+  for (let i = 0; i < input.length - 1; i++) {
+    const byte = TOKENS.indexOf(input[i])
+
+    if (byte > -1) {
+      bytes.push(byte)
+    }
+  }
+
+  return bytes
+}
+
+const input = document.querySelector('[data-input]')
+const output = document.querySelector('[data-output]')
+const runButton = document.querySelector('[data-run]')
+
+input.value = `
+  ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+`.trim();
+
+runButton.addEventListener('click', () => {
+  const script = compile(input.value)
+
+  let then = performance.now()
+  executeWASM(script)
+  console.log(`WASM took ${performance.now() - then}ms`)
+
+  then = performance.now()
+  for (let i = 0; i < 1000; i++) {
+    executeJS(script)
+  }
+  console.log(`JS took ${performance.now() - then}ms`)
+
+  output.innerText = executeJS(script)
+    .reduce((str, byte) => str + String.fromCharCode(byte), '')
+});
+</script>
+</head>
+<body>
+  <textarea data-input cols="30" rows="10"></textarea>
+  <div data-output></div>
+  <button data-run>
+    Run
+  </button>
+</body>
+</html>
